@@ -30,6 +30,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ---- Feed mode (localStorage) ----
+    const MODE_KEY = 'funny_mode';
+    const MODES = ['algorithm', 'random'];
+
+    // SVGs parsed once into detached DOM nodes; we clone on each insert
+    // so we never touch innerHTML with these strings.
+    function parseSvg(s) {
+        return new DOMParser().parseFromString(s, 'image/svg+xml').documentElement;
+    }
+    const MODE_ICONS = {
+        // algorithm: sparkles / "smart"
+        algorithm: parseSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>'),
+        // random: shuffle arrows
+        random: parseSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>'),
+    };
+
+    function getMode() {
+        const m = localStorage.getItem(MODE_KEY);
+        return MODES.includes(m) ? m : 'algorithm';
+    }
+
+    function cycleMode() {
+        const i = MODES.indexOf(getMode());
+        const next = MODES[(i + 1) % MODES.length];
+        localStorage.setItem(MODE_KEY, next);
+        refreshModeButtons();
+    }
+
+    function refreshModeButtons() {
+        const mode = getMode();
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.replaceChildren(MODE_ICONS[mode].cloneNode(true));
+            btn.title = `Mode: ${mode} (click to change)`;
+            btn.setAttribute('aria-label', `Feed mode: ${mode}`);
+        });
+    }
+
     // Intersection Observer for auto-playing videos in view
     const observerOptions = {
         root: feed,
@@ -65,10 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
         isFetching = true;
         
         try {
-            // Send watched IDs to the backend for the recommendation algorithm
+            const params = new URLSearchParams();
             const watched = getWatchedIds();
-            const watchedParam = watched.length > 0 ? `?watched=${watched.join(',')}` : '';
-            const response = await fetch(`/api/video/next${watchedParam}`);
+            if (watched.length > 0) params.set('watched', watched.join(','));
+            const mode = getMode();
+            if (mode !== 'algorithm') params.set('mode', mode);
+            const qs = params.toString();
+            const response = await fetch(`/api/video/next${qs ? '?' + qs : ''}`);
             if (!response.ok) {
                 if (response.status === 404) {
                     // No videos available yet
@@ -97,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `
             <video class="video-player" src="/videos/${data.filename}" loop playsinline preload="metadata"></video>
             <div class="video-actions">
+                <button class="action-btn mode-btn" title="Feed mode"></button>
                 <button class="action-btn upvote-btn" data-id="${data.id}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
@@ -135,6 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
         downBtn.addEventListener('click', () => vote(data.id, 'down', upBtn, downBtn));
 
         container.querySelector('.upload-btn').addEventListener('click', openUploadModal);
+        container.querySelector('.mode-btn').addEventListener('click', cycleMode);
+        refreshModeButtons();
         
         // Toggle play/pause on video click
         const video = container.querySelector('video');

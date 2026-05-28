@@ -103,7 +103,15 @@ def next_video():
             }
         except ValueError:
             pass
-    
+
+    # Mode selection. `random` = uniform over unwatched (falls back to all
+    # videos once everything has been seen); anything else falls through
+    # to the scoring algorithm below.
+    mode = request.args.get('mode', 'algorithm')
+    if mode == 'random':
+        pool = [v for v in videos if v.id not in watched_ids] or videos
+        return jsonify(random.choice(pool).to_dict())
+
     # Score each video
     from datetime import datetime
     now = datetime.utcnow()
