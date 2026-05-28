@@ -22,3 +22,8 @@ class Config:
     # Admin credentials
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'password'
+
+    # Rate limiting (shared across uWSGI workers via Redis)
+    RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL') or 'memory://'
+    RATELIMIT_STRATEGY = 'fixed-window'
+    RATELIMIT_HEADERS_ENABLED = True

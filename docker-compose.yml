@@ -11,4 +11,12 @@ services:
       - FLASK_ENV=production
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=CHANGETHISPASSWORDNOW
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.8.0-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     restart: unless-stopped

@@ -6,6 +6,8 @@ mimetypes.add_type('text/css', '.css')
 mimetypes.add_type('application/javascript', '.js')
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, Response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from app.config import Config
 from app.models import db, Video
@@ -15,6 +17,15 @@ app.config.from_object(Config)
 
 # Initialize extensions
 db.init_app(app)
+
+# Rate limiter — shared across uWSGI workers via the Redis backend configured
+# in Config.RATELIMIT_STORAGE_URI. Default limits act as a backstop for any
+# route that isn't given an explicit limit.
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per minute", "2000 per hour"],
+)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -41,11 +52,17 @@ def authenticate():
         'You have to login with proper credentials', 401,
         {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
+def _auth_ok():
+    auth = request.authorization
+    return bool(auth and check_auth(auth.username, auth.password))
+
 def requires_auth(f):
+    # brute-force limit: applies only when creds are missing or wrong,
+    # so authenticated admin work isn't throttled
     @wraps(f)
+    @limiter.limit("10 per minute", exempt_when=_auth_ok)
     def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
+        if not _auth_ok():
             return authenticate()
         return f(*args, **kwargs)
     return decorated
@@ -57,6 +74,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/video/next')
+@limiter.limit("120 per minute")
 def next_video():
     videos = Video.query.all()
     if not videos:
@@ -106,6 +124,7 @@ def next_video():
     return jsonify(chosen.to_dict())
 
 @app.route('/api/video/<int:video_id>/vote', methods=['POST'])
+@limiter.limit("30 per minute")
 def vote_video(video_id):
     video = Video.query.get_or_404(video_id)
     data = request.json
@@ -121,6 +140,7 @@ def vote_video(video_id):
     return jsonify(video.to_dict())
 
 @app.route('/upload', methods=['POST'])
+@limiter.limit("5 per hour;2 per minute")
 def upload_public():
     if 'video' not in request.files:
         return jsonify({'error': 'No video part'}), 400
