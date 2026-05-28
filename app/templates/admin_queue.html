@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}funny - Moderation Queue{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <header class="admin-header glass-panel">
+        <h1>Moderation Queue</h1>
+        <nav>
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Active Videos</a>
+            <a href="{{ url_for('admin_queue') }}" class="nav-link active">Moderation Queue</a>
+            <a href="{{ url_for('index') }}" class="nav-link">View Site</a>
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-card glass-panel">
+            <h2>Pending Reviews</h2>
+            <div class="queue-grid">
+                {% for video in queued_videos %}
+                <div class="queue-item glass-panel">
+                    <video src="{{ url_for('serve_queued_video', filename=video) }}" controls preload="metadata"></video>
+                    <div class="queue-info">
+                        <span class="filename">{{ video }}</span>
+                    </div>
+                    <div class="queue-actions">
+                        <form action="{{ url_for('admin_queue_action', filename=video, action='approve') }}" method="POST">
+                            <button type="submit" class="success-btn">Approve</button>
+                        </form>
+                        <form action="{{ url_for('admin_queue_action', filename=video, action='reject') }}" method="POST">
+                            <button type="submit" class="danger-btn">Reject</button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-center" style="width: 100%;">No videos pending review.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

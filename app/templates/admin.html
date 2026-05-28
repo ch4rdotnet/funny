@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}funny - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <header class="admin-header glass-panel">
+        <h1>Admin Dashboard</h1>
+        <nav>
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">Active Videos</a>
+            <a href="{{ url_for('admin_queue') }}" class="nav-link">Moderation Queue</a>
+            <a href="{{ url_for('index') }}" class="nav-link">View Site</a>
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-card glass-panel">
+            <h2>Direct Upload (Bypass Queue)</h2>
+            <form action="{{ url_for('admin_upload') }}" method="POST" enctype="multipart/form-data" class="admin-form">
+                <input type="file" name="video" accept="video/*" multiple required>
+                <button type="submit" class="submit-btn primary-btn">Upload</button>
+            </form>
+        </section>
+
+        <section class="admin-card glass-panel">
+            <h2>Video Stats</h2>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Filename</th>
+                            <th>👍 Thumbs Up</th>
+                            <th>👎 Thumbs Down</th>
+                            <th>Uploaded</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in videos %}
+                        <tr>
+                            <td>{{ video.id }}</td>
+                            <td>{{ video.filename }}</td>
+                            <td class="stat-up">{{ video.thumbs_up }}</td>
+                            <td class="stat-down">{{ video.thumbs_down }}</td>
+                            <td>{{ video.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form action="{{ url_for('admin_delete', video_id=video.id) }}" method="POST" style="display: inline;">
+                                    <button type="submit" class="danger-btn" onclick="return confirm('Delete this video?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No active videos yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

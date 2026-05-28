@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - ./funny/videos:/app/videos
+      - ./funny/queue:/app/queue
+      - ./funny/instance:/app/instance
+    environment:
+      - FLASK_ENV=production
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=CHANGETHISPASSWORDNOW
+    restart: unless-stopped
