@@ -24,14 +24,15 @@ class Config:
     # Generate a new hash with:
     #   python -c "from werkzeug.security import generate_password_hash; \
     #              import getpass; print(generate_password_hash(getpass.getpass()))"
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
-    # Dev-only fallback hash for the password 'password'. Real deployments
-    # must set ADMIN_PASSWORD_HASH.
-    ADMIN_PASSWORD_HASH = os.environ.get('ADMIN_PASSWORD_HASH') or (
-        'scrypt:32768:8:1$Ex7ZvGUT5hqTOg09$4462ed63088531b17f6e7011310341d7'
-        '5355cdf53079a57e5faf8150b4f87cc520c784b42cd224fe99324af2922227b0'
-        '3ad16152943f7296e05402a58e11cfb3'
-    )
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+    ADMIN_PASSWORD_HASH = os.environ.get('ADMIN_PASSWORD_HASH')
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD_HASH:
+        raise RuntimeError(
+            "ADMIN_USERNAME and ADMIN_PASSWORD_HASH must both be set. "
+            "Generate a hash with: "
+            "python -c \"from werkzeug.security import generate_password_hash; "
+            "import getpass; print(generate_password_hash(getpass.getpass()))\""
+        )
 
     # Rate limiting (shared across uWSGI workers via Redis)
     RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL') or 'memory://'
