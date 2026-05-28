@@ -143,6 +143,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Close share popup when clicking outside
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.share-control')) return;
+        document.querySelectorAll('.share-control.show-popup').forEach(el => {
+            el.classList.remove('show-popup');
+        });
+    });
+
+    function flashShareLabel(labelEl, text) {
+        const original = labelEl.dataset.original || labelEl.textContent;
+        labelEl.dataset.original = original;
+        labelEl.textContent = text;
+        clearTimeout(labelEl._flashTimer);
+        labelEl._flashTimer = setTimeout(() => {
+            labelEl.textContent = labelEl.dataset.original;
+        }, 1200);
+    }
+
     // Intersection Observer for auto-playing videos in view
     const observerOptions = {
         root: feed,
@@ -249,6 +267,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     </svg>
                     <span class="action-count down-count">${data.thumbs_down}</span>
                 </button>
+                <div class="share-control">
+                    <button class="action-btn share-btn" title="Share" aria-label="Share">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                    </button>
+                    <div class="share-popup">
+                        <button class="share-close" aria-label="Close">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <button class="share-option" data-action="copy">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <span class="label">Copy link</span>
+                        </button>
+                        <button class="share-option" data-action="download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span class="label">Download</span>
+                        </button>
+                    </div>
+                </div>
                 <button class="upload-btn neon-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -277,6 +329,42 @@ document.addEventListener('DOMContentLoaded', () => {
         container.querySelector('.upload-btn').addEventListener('click', openUploadModal);
         container.querySelector('.mode-btn').addEventListener('click', cycleMode);
         refreshModeButtons();
+
+        // Share popup
+        const shareControl = container.querySelector('.share-control');
+        shareControl.querySelector('.share-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            shareControl.classList.toggle('show-popup');
+        });
+        shareControl.querySelector('.share-close').addEventListener('click', (e) => {
+            e.stopPropagation();
+            shareControl.classList.remove('show-popup');
+        });
+        shareControl.querySelectorAll('.share-option').forEach(opt => {
+            opt.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const action = opt.dataset.action;
+                const videoUrl = `${window.location.origin}/videos/${encodeURIComponent(data.filename)}`;
+                const labelEl = opt.querySelector('.label');
+                if (action === 'copy') {
+                    try {
+                        await navigator.clipboard.writeText(videoUrl);
+                        flashShareLabel(labelEl, 'Copied!');
+                    } catch (err) {
+                        console.error('Clipboard write failed', err);
+                        flashShareLabel(labelEl, 'Copy failed');
+                    }
+                } else if (action === 'download') {
+                    const a = document.createElement('a');
+                    a.href = videoUrl;
+                    a.download = data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    shareControl.classList.remove('show-popup');
+                }
+            });
+        });
 
         // Volume: slider drag updates persisted volume + all video elements
         const volumeControl = container.querySelector('.volume-control');

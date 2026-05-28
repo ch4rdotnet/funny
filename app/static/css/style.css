@@ -230,6 +230,96 @@ body {
     opacity: 1;
 }
 
+/* Share button: toggles a popup with copy-link / download options. */
+.share-control {
+    position: relative;
+    display: flex;
+}
+
+.share-popup {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 160px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 15;
+}
+
+.share-control.show-popup .share-popup {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.share-close {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-darker);
+    border: 1px solid var(--glass-border);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1;
+}
+
+.share-close svg {
+    width: 14px;
+    height: 14px;
+}
+
+.share-close:hover {
+    background: var(--danger);
+}
+
+.share-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.share-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.share-option svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.share-option .label {
+    white-space: nowrap;
+}
+
 /* Overlay Actions */
 .video-actions {
     position: absolute;
